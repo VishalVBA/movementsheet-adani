@@ -3,7 +3,7 @@ import pandas as pd
 from io import BytesIO
 import re
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment
 from openpyxl import Workbook, load_workbook
@@ -74,9 +74,33 @@ if st.button('Start Processing'):
             df["ETA/ETD"] = df["ETD"].fillna(df["ETA"])
         
             # Step 6: Clean "Origin" and "Destination" columns
-            def clean_location(value):
-                return "" if pd.isna(value) else re.split(r"[,/]", value)[0].strip()
+            # def clean_location(value):
+            #     return "" if pd.isna(value) else re.split(r"[,/]", value)[0].strip()
         
+            # df["Origin"] = df["Origin"].apply(clean_location)
+            # df["Destination"] = df["Destination"].apply(clean_location)
+            valid_cities = {"Karipur", "Singapore", "Jodhpur", "Cochin", "Phuket", "Goa", "Bangalore", "Mumbai", 
+                "Jabalpur", "Indore", "Delhi", "Jaipur", "Allahabad", "Dubai", "Lucknow", "Hyderabad", 
+                "Ahmedabad", "Dhaka", "Vadodara", "Colombo", "Patna", "Mangalore", "Madurai", "Udaipur", 
+                "Chennai", "Dehradun", "Abu Dhabi", "Bangkok", "Chandigarh", "Guwahati", "Bhopal", "Ranchi", 
+                "Ayodhya", "Gwalior", "Srinagar", "Bahrain", "Rajkot", "Raipur", "Varanasi", "Calicut", "Kochi", 
+                "New Delhi", "Kolkata", "Amritsar", "Thiruvananthapuram", "Agra", "Aurangabad", "Leh", "Kanpur", 
+                "Kandla", "Jammu", "Imphal", "Belgaum", "Bhavnagar", "Bhuj", "Bhubaneswar", "Nagpur", "Gorakhpur", 
+                "Hubli", "Doha", "London", "Zurich", "Hong Kong", "Kuwait", "New York", "Diu", "Male", "Dammam", 
+                "Mauritius", "Kuala Lumpur", "Prayagraj", "Toronto", "Newark", "Bengaluru", "Paris","Munich","Calcutta",
+                "Amsterdam","Jeddah","Riyadh"}
+
+            def clean_location(value):
+                if pd.isna(value):
+                    return ""
+                
+                value = value.strip()
+                for city in valid_cities:
+                    if re.search(rf"\b{city}\b", value, re.IGNORECASE):
+                        return city
+                
+                return "Azerbaijan" if "HEYDAR ALIYEV INTERNATIONAL AIRPORT" in value else value  # Convert specific airport to Azerbaijan
+
             df["Origin"] = df["Origin"].apply(clean_location)
             df["Destination"] = df["Destination"].apply(clean_location)
         
@@ -124,7 +148,7 @@ if st.button('Start Processing'):
             "Orig/Dest": "Orig/Dest", "ETA/ETD": "ETA/ETD", "TravelClass": "Class of Travel",
             "PlacardCountryCode": "Country Code", "PlacardContactNo": "Placard Guest Contact No.",
             "PlacardName": "Placard Guest Name", "Nationality": "Nationality", "Age": "Age",
-            "BillingContactNo": "Booker Contact No.", "BillingEmail": "Email Id", "Remarks": "Remarks"
+            "BillingContactNo": "Booker Contact No.", "BillingEmail": "Email Id", "Remarks": "Remarks", "AddOnName": "AddOn"
             }
             df = df.rename(columns=rename_columns)
         
@@ -135,7 +159,7 @@ if st.button('Start Processing'):
             column_order = ["Sr No.", "Service Time", "Itinerary No.", "Service", "Package", "Terminal", "Profile",
                             "GUEST NAME", "Total Guest", "Flight No.", "Orig/Dest", "ETA/ETD", "Class of Travel",
                             "Country Code", "Placard Guest Contact No.", "Placard Guest Name", "Nationality", "Age",
-                            "Booker Contact No.", "Email Id", "Remarks", "GSO"]
+                            "Booker Contact No.", "Email Id", "Remarks", "AddOn", "GSO"]
             #df = df[column_order]
             
             # Check which columns are missing
@@ -218,13 +242,16 @@ if st.button('Start Processing'):
             df2["Profile"] = ""
             
             # Step 4: Create "Orig/Dest" column
-            valid_cities = {"Karipur", "Singapore", "Jodhpur", "Cochin", "Phuket", "Goa", "Bangalore", "Mumbai", "Jabalpur", "Indore",
-                            "Delhi", "Jaipur", "Allahabad", "Dubai", "Lucknow", "Hyderabad", "Ahmedabad", "Dhaka", "Vadodara", "Colombo",
-                            "Patna", "Mangalore", "Madurai", "Udaipur", "Chennai", "Dehradun", "Abu Dhabi", "Bangkok", "Chandigarh", "Guwahati",
-                            "Bhopal", "Ranchi", "Ayodhya", "Gwalior", "Srinagar", "Bahrain", "Rajkot", "Raipur", "Varanasi", "Calicut", "Kochi",
-                            "New Delhi", "Kolkata", "Hyderabad", "Amritsar", "Thiruvananthapuram", "Agra", "Aurangabad", "Leh", "Kanpur", "Kandla",
-                            "Jammu", "Imphal", "Belgaum", "Bhavnagar", "Bhuj", "Bhubaneswar", "Nagpur", "Gorakhpur", "Hubli", "Doha", "London",
-                            "Zurich", "Hong Kong", "Kuwait", "New York", "Diu", "Male", "Dammam", "Mauritius", "Kuala Lumpur", "Prayagraj", "Toronto"}
+            valid_cities = {"Karipur", "Singapore", "Jodhpur", "Cochin", "Phuket", "Goa", "Bangalore", "Mumbai", 
+                "Jabalpur", "Indore", "Delhi", "Jaipur", "Allahabad", "Dubai", "Lucknow", "Hyderabad", 
+                "Ahmedabad", "Dhaka", "Vadodara", "Colombo", "Patna", "Mangalore", "Madurai", "Udaipur", 
+                "Chennai", "Dehradun", "Abu Dhabi", "Bangkok", "Chandigarh", "Guwahati", "Bhopal", "Ranchi", 
+                "Ayodhya", "Gwalior", "Srinagar", "Bahrain", "Rajkot", "Raipur", "Varanasi", "Calicut", "Kochi", 
+                "New Delhi", "Kolkata", "Amritsar", "Thiruvananthapuram", "Agra", "Aurangabad", "Leh", "Kanpur", 
+                "Kandla", "Jammu", "Imphal", "Belgaum", "Bhavnagar", "Bhuj", "Bhubaneswar", "Nagpur", "Gorakhpur", 
+                "Hubli", "Doha", "London", "Zurich", "Hong Kong", "Kuwait", "New York", "Diu", "Male", "Dammam", 
+                "Mauritius", "Kuala Lumpur", "Prayagraj", "Toronto", "Newark", "Bengaluru", "Paris","Munich","Calcutta",
+                "Amsterdam","Jeddah","Riyadh"}
             
             def clean_location(value):
                 if pd.isna(value):
@@ -273,6 +300,9 @@ if st.button('Start Processing'):
             
             # Step 9: Create "Age" column (set to 30)
             df2["Age"] = 30
+
+            # Step 8: Create "Addon" column (blank)
+            df2["Addon"] = ""
             
             # Step 10: Remove unwanted columns
             columns_to_remove = ["BookinDate", "FYMob", "DateOfService", "MOS", "ServiceLocation", "BookingStatus",
@@ -306,7 +336,7 @@ if st.button('Start Processing'):
             column_order = ["Sr No", "Service Time", "Itinerary No.", "Service", "Package", "Terminal", "Profile", "GUEST NAME",
                             "Total Guest", "Flight No.", "Orig/Dest", "ETA/ETD", "Class of Travel", "Country Code",
                             "Placard Guest Contact No.", "Placard Guest Name", "Nationality", "Age", "Booker Contact No.", "Email Id",
-                            "Remarks", "GSO"]
+                            "Remarks", "Addon", "GSO"]
             
             df2 = df2.reindex(columns=column_order, fill_value="")
             
@@ -386,6 +416,17 @@ if st.button('Start Processing'):
             st.write("### Final Processed DataFrame:")
             st.dataframe(combined_df)
         
+            # Define the correct column order
+            correct_columns = [
+                "Sr No.", "Service Time", "Itinerary No.", "Service", "Package", "Terminal",
+                "Profile", "GUEST NAME", "Total Guest", "Flight No.", "Orig/Dest", "ETA/ETD",
+                "Class of Travel", "Country Code", "Placard Guest Contact No.", "Placard Guest Name",
+                "Nationality", "Age", "Booker Contact No.", "Email Id", "Remarks", "AddOn", "GSO"
+            ]
+
+            # Ensure only expected columns are written, dropping unexpected duplicates
+            combined_df = combined_df[correct_columns]
+
             # Save to a BytesIO object using openpyxl to preserve formatting
             output = BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -420,11 +461,15 @@ if st.button('Start Processing'):
             # Process the data while preserving formatting
             output = process_booking_dataframes(package_df, package_wb, standalone_df)
             #st.write(output)
-        
+            ist_offset = timedelta(hours=5, minutes=30)
+            ist_time = datetime.utcnow() + ist_offset
+            
             # Download Button
             st.download_button(
                 label="Download Processed File",
                 data=output,
-                file_name="processed_booking.xlsx",
+                #file_name="processed_booking.xlsx",
+                #file_name=f"processed_booking_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.xlsx",
+                file_name = f"processed_booking_{ist_time.strftime('%d-%m-%Y')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
